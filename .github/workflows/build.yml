@@ -1,0 +1,44 @@
+name: Build Eclipse
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+      - name: Build
+        run: cmake --build build --config Release --target Eclipse_VST3
+      - name: Package
+        run: |
+          VST=$(find build -type d -name "Eclipse.vst3" | head -n 1)
+          codesign --force --deep -s - "$VST"
+          mkdir out
+          ditto -c -k --keepParent "$VST" out/Eclipse-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Eclipse-mac
+          path: out/Eclipse-mac.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build
+      - name: Build
+        run: cmake --build build --config Release --target Eclipse_VST3
+      - name: Package
+        shell: bash
+        run: |
+          VST=$(find build -type d -name "Eclipse.vst3" | head -n 1)
+          mkdir out
+          cp -r "$VST" out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Eclipse-windows
+          path: out
